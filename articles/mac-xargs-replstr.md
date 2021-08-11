@@ -3,7 +3,7 @@ title: "Macのxargsはバイト数制限に注意が必要"
 emoji: "🍏"
 type: "tech"
 topics: ["mac", "unix", "xargs", "command"]
-published: false
+published: true
 ---
 
 ## TL;DR
