@@ -3,7 +3,7 @@ title: "パイプのバッファーサイズの罠"
 emoji: "🐃"
 type: "tech"
 topics: ["unix", "linux", "pipe", "ruby"]
-published: false
+published: true
 ---
 
 ## はじめに
@@ -140,7 +140,7 @@ Linux では、パイプ のバッファーサイズは 65,536 Byte です。
 
 ### 根本原因
 
-Rubyの`Open3.popen3`を実行すると、パイプが 3 つ作成されます[^4]。
+Ruby の`Open3.popen3`を実行すると、パイプが 3 つ作成されます[^4]。
 その後、引数で渡したコマンドが実行され、親子プロセスの双方で 3 つのパイプの fd に対して必要な処理を行います。
 
 |                        | 親・読み取り fd            | 親・書き込み fd            | 子・読み取り fd        | 子・書き込み fd              |
