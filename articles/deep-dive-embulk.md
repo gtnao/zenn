@@ -3,7 +3,7 @@ title: "Embulkのcoreのソースコードから紐解くデータ転送のし�
 emoji: "🐋"
 type: "tech"
 topics: ["embulk", "java"]
-published: false
+published: true
 ---
 
 この記事は [trocco Advent Calendar 2023](https://qiita.com/advent-calendar/2023/trocco) の6日目の記事となります。
