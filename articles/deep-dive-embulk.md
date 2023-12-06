@@ -259,9 +259,23 @@ while (pageReader.nextRecord()) {
 ```
 
 ここで一点着目したいのは、FilterPluginにおいては`PageReader`によって`Page`が読み出されると然るべく処理を行った後に`PageBuilder`を利用して`Page`を生成して後続に渡している点です。
+
+(embulk-standards/embulk-filter-remove_columnsの例)
+https://github.com/embulk/embulk-standards/blob/46862a38c1c30008b95d0a296752f55dec8a38d1/embulk-filter-remove_columns/src/main/java/org/embulk/filter/remove_columns/RemoveColumnsFilterPlugin.java#L151-L165
+
 InputPlugin -> OutputPluginの流れの中で同一の一行であれば同一の`Page`と言うように一対一に紐づいているわけではなく、
 以下のように`Page`は各プラグイン間においてのデータ受け渡しのたびに生成されます。
 
 ![](https://storage.googleapis.com/zenn-user-upload/5e437693bbe0-20231206.png)
 
 # おわりに
+
+いかがだったでしょうか。
+`embulk run`の処理の流れの詳細は、core側とプラグイン側の両方を参照しないとといけなかったり、`PageOutput`の部分などコードを上から読んでいくだけではイメージが付きづらい部分があったりするかもしれません。
+今回はその辺をできるだけ図やソースコードのリンクを使って解説してみました。
+普段ユーザーとして利用している分にはここまで理解する必要はないと思いますが、何かの際のトラブルシューティング時で少しでもお役に立てれば幸いです。
+
+余談ですが、私も業務で特定の状況で発生するメモリリークの問題を調査する必要があり、その際coreのコードを読み込んだことが今回の記事を執筆した始まりでした。
+
+(少量でもファイル数が多い場合に、プラグイン側の実装次第では`Page`で割り当てた`buffer`が解放されないことによって発生する問題)
+https://github.com/orgs/embulk/discussions/21
