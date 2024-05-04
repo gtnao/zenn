@@ -3,7 +3,7 @@ title: "ざっくりと、しかしある程度理解しておく、浮動小数
 emoji: "🔢"
 type: "tech"
 topics: ["float", "浮動小数点数"]
-published: false
+published: true
 ---
 
 # この記事について
