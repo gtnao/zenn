@@ -18,6 +18,6 @@
   },
   "homepage": "https://github.com/gtnao0219/zenn#readme",
   "dependencies": {
-    "zenn-cli": "^0.1.94"
+    "zenn-cli": "^0.1.153"
   }
 }
