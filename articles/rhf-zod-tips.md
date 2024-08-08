@@ -4,6 +4,7 @@ emoji: "⚛️"
 type: "tech"
 topics: ["react", "typescript", "reacthookform", "zod"]
 published: true
+publication_name: "primenumber"
 ---
 
 # はじめに

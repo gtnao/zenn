@@ -4,6 +4,7 @@ emoji: "🍏"
 type: "tech"
 topics: ["mac", "unix", "xargs", "command"]
 published: true
+publication_name: "primenumber"
 ---
 
 ## TL;DR

@@ -4,6 +4,7 @@ emoji: "🔢"
 type: "tech"
 topics: ["float", "浮動小数点数"]
 published: true
+publication_name: "primenumber"
 ---
 
 # この記事について

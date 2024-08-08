@@ -4,6 +4,7 @@ emoji: "🐋"
 type: "tech"
 topics: ["mermaid"]
 published: false
+publication_name: "primenumber"
 ---
 
 シーケンス図がデカいと縦幅を取るため、記事にはスクショを貼る。

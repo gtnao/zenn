@@ -4,6 +4,7 @@ emoji: "🐋"
 type: "tech"
 topics: ["embulk", "java"]
 published: true
+publication_name: "primenumber"
 ---
 
 この記事は [trocco Advent Calendar 2023](https://qiita.com/advent-calendar/2023/trocco) の6日目の記事となります。

@@ -4,6 +4,7 @@ emoji: "🐃"
 type: "tech"
 topics: ["unix", "linux", "pipe", "ruby"]
 published: true
+publication_name: "primenumber"
 ---
 
 ## はじめに
@@ -193,7 +194,11 @@ C 言語などのシステムコールを直接意識する言語でない場合
 - [詳解 UNIX プログラミング 第 3 版](https://www.shoeisha.co.jp/book/detail/9784798135021)
 
 [^1]: 名前付きパイプや Unix ドメインソケット
+
 [^2]: プログラムがカーネルの機能を呼び出すための API
+
 [^3]: オープンしているファイルを参照する非負の整数。ネットワーク間通信に用いられるソケットなど、通常ファイル以外でも抽象化され用いられる。
+
 [^4]: https://github.com/ruby/open3/blob/c5a7dde80608e724b17647f7f61abec5d2dff50f/lib/open3.rb#L93-L101
+
 [^5]: fd を複製するシステムコール
