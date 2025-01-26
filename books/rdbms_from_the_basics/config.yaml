@@ -1,4 +1,4 @@
-title: "Rustでゼロから作るRDBMS(前編)"
+title: "Rustでゼロから作るRDBMS"
 summary: "Rustを使って、RDBMS(Relation Database Management System)を、単にファイルに値を書き込んでいく原始的なところから順を追って実装してきます。"
 topics: ["rust", "database", "rdbms", "transaction", "acid"]
 published: false
@@ -6,3 +6,4 @@ price: 0
 chapters:
   - chapter00
   - chapter01
+  - chapter02

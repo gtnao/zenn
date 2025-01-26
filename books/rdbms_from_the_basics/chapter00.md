@@ -28,7 +28,7 @@ Rustを使いますが、Rust自体の初歩的な解説はしません。
 
 各章のサンプルコードは、全てGitHubに公開しています。
 
-[my_own_rbdms](https://github.com/gtnao/my_own_rdbms)
+[rdbms_from_the_basics](https://github.com/gtnao/rdbms_from_the_basics)
 
 `examples`ディレクトリ以下に、各章と対応するファイルを配置しています。
 以下で章ごとのサンプルコードを実行できます。
