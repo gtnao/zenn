@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/gtnao0219/zenn#readme",
   "dependencies": {
+    "textlint": "^14.4.2",
+    "textlint-rule-preset-ja-technical-writing": "^12.0.2",
     "zenn-cli": "^0.1.153"
   }
 }
