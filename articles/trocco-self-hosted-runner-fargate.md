@@ -3,7 +3,7 @@ title: "TROCCOのSelf-Hosted RunnerをAmazon ECS（Fargate）で動かしてプ�
 emoji: "🛤️"
 type: "tech"
 topics: ["trocco", "aws", "ecs", "fargate"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
@@ -303,4 +303,4 @@ ECSサービスでタスク数を4に設定してデプロイしてみます。
 # おわりに
 
 今回は、TROCCO Self-Hosted Runnerが解決する課題、技術仕様、実際の構築例まで、広くご紹介させていただきました。
-トライアルも受け付けておりますので、ご関心をお持ちの方は![サービスページ](https://primenumber.com/trocco/features/self-hosted-runner)からお問合せください。
+トライアルも受け付けておりますので、ご関心をお持ちの方は[サービスページ](https://primenumber.com/trocco/features/self-hosted-runner)からお問合せください。
