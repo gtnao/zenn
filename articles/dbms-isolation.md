@@ -111,4 +111,108 @@ $$
 ここで、ある並行実行のスケジュールが与えられたとき、「**何らかの基準においては**、少なくともいずれか一つの逐次実行のスケジュールと等価」と言える基準があるとします。
 その場合、**その基準の枠内においては**、その並行実行のスケジュールは、Isolationが保証されていると考えることができそうです。
 
+少し展開が飛躍してしまいますが、広く用いられているConflict Serializabilityという基準について考えていきます。
+
 ## Conflict Serializability
+
+Conflict Serializabilityは、「競合する操作の実行順序」に注目する考え方です。
+
+### Conflict
+
+まず、Conflict（競合）する操作、を定義します。
+以下の3つの条件を全て満たす場合、異なる2つのトランザクション$T_i$と$T_j$にそれぞれ属する操作$op_i$と$op_j$はConflictすると考えます。
+
+1.  $T_i \neq T_j$ （異なるトランザクションである）
+2.  $op_i$ と $op_j$ が同じデータ項目にアクセスする
+3.  $op_i$ と $op_j$ の少なくとも一方がWrite操作である
+
+具体的には、以下のペアがConflictします（$X$は同じデータ項目）。
+
+- $R_i(X)$ と $W_j(X)$ （Read-Write Conflict）
+- $W_i(X)$ と $R_j(X)$ （Write-Read Conflict）
+- $W_i(X)$ と $W_j(X)$ （Write-Write Conflict）
+
+Read操作同士 ($R_i(X)$ と $R_j(X)$) は、Conflictしません。
+
+ちなみに、Conflictする操作のペアが存在すること自体が即座に問題なわけではなく、またこの時点では順序関係はなくただのペア関係という点を念頭においてください。
+
+先ほどから用いている題材の場合、
+
+$$
+\bigl\{\, \{W_{1}(X),\,R_{2}(X)\},\; \{W_{1}(Y),\,W_{2}(Y)\} \,\bigr\}
+$$
+
+というConflictが存在します。
+
+### Conflict Equivalence
+
+さて、あるスケジュールが与えられると、先ほどの定義で導出したConflictする操作のペアに順序関係が生まれます。
+
+例として、先ほどの$S'$スケジュールを考えてみます。
+
+$$
+\begin{aligned}
+S'  &= \bigl\langle\, R_{2}(X),\; R_{1}(X),\; W_{2}(Y),\; W_{1}(X),\; W_{1}(Y) \bigr\rangle
+\end{aligned}
+$$
+
+こちらのスケジュールでは、Conflictする操作は以下のような順序関係になります。
+
+$$
+\bigl\{\, (R_{2}(X) \;\to\; W_{1}(X)),\; (W_{2}(Y) \;\to\; W_{1}(Y)) \,\bigr\}
+$$
+
+そして、以下の$T_{2}$, $T_{1}$の順序で逐次実行したスケジュールに関するConflictの順序関係も同様になります。
+
+$$
+\begin{aligned}
+S_{2,1} &= \bigl\langle\, R_{2}(X),\; W_{2}(Y),\; R_{1}(X),\; W_{1}(X),\; W_{1}(Y) \bigr\rangle
+\end{aligned}
+$$
+
+ある異なるスケジュール間のConflictの順序関係が一致する場合、それらのスケジュールはConflict Equivalentであると言えます。
+さらに、あるスケジュールがいずれかの逐次実行のスケジュールとConflict Equivalentである場合、そのスケジュールはConflict Serializableと言うことができます。
+
+### Conflict Serializableではない例
+
+先ほどの例における$S'$はConflict Serializableでしたが、$S''$はConflict Serializableとは言えません。
+
+$$
+\begin{aligned}
+S'' &= \bigl\langle\, R_{2}(X),\; R_{1}(X),\; W_{1}(X),\; W_{1}(Y),\; W_{2}(Y) \bigr\rangle
+\end{aligned}
+$$
+
+Conflictの順序を考えると以下のようになります。
+
+$$
+\bigl\{\, (R_{2}(X) \;\to\; W_{1}(X)),\; (W_{1}(Y) \;\to\; W_{2}(Y)) \,\bigr\}
+$$
+
+そして、こちらをトランザクション間の順序に当てはめると以下のようになります。
+
+$$
+T_{2} \;\rightarrow\; T_{1}, \qquad
+T_{1} \;\rightarrow\; T_{2}
+$$
+
+ある$T_{1}$に属する操作はある$T_{2}$に属する操作より前に行われるが、別の$T_{1}$に属する操作はある$T_{2}$に属する操作より後に行われるということになります。
+これを満たす逐次実行のConflict順序が存在しないことも直感的に想像が着くと思います。
+
+# 実装方法
+
+ここまでで、ある並行実行がIsolationを保証していると言える基準は導くことができました。
+しかしながら、現実にはDBMSにはリアルタイムにトランザクションが流れてきますし、それらはCommit/Abortされるまでどのような操作が行われるかも分かりません。
+このような条件下において、結果的にConflict Serializabilityが満たされている状態を実現するにはどうすればいいかを考えなければいけません。
+
+## Shared/Exclusive Lock
+
+## Two Phase Lock
+
+## Deadlock
+
+## Cascading Abort
+
+## Strict Two Phase Lock
+
+# ANSI SQL-92 Isolation Level
