@@ -301,7 +301,7 @@ $$
 
 # Cascading Abort
 
-さて、2PLを課せば、ある基準においてはIsolation特性を許容できる並行実行制御を実現できそうです。
+2PLを課せば、ある基準においてはIsolation特性を許容できる並行実行制御を実現できそうです。
 しかし、ここまでの話では、トランザクションが**Abortされることを考えていません**でした。
 ACID特性のIsolationだけに着目しており、Atomicity/Durabilityを無視しています。
 （一旦分けて把握することが重要と言いましたが、関連し合っている部分はもちろんあるので難しいところです。）
@@ -345,108 +345,131 @@ CascadingAbortを防ぐには、2PLに、**ロックはトランザクション�
 
 # ANSI SQL-92 Isolation Level
 
-さて、ここまででConflict SerializableかつCascading Abortを避けることができるスケジュールのIsolationは実装できそうです。
-一方で、どちらも馴染みのないものではあります。
-よく聞くところだと、RepeatableReadやReadCommitedといったような分離レベルやDirtyReadやNonRepeatableReadといった単語ではないでしょうか。
-これはANSIがまとめたSQL-92における分離レベルです。
+少し話が変わって、Conflict Serializabilityをはじめとして、これまでに登場した概念は馴染みのないもの多いのではないでしょうか。
+トランザクションのについて学ぼうとすると、**Read Commited**や**Repeatable Read**といった分離レベル、あるいは**Dirty Read**や**Phantom Read**といった現象に遭遇するはずです。
 
-これをそのまま鵜呑みにしてしまうのは注意が必要なのですが、簡単に定義を確認しておきます。
+これはANSI（米国国家標準協会）が1992年に定めたSQLに関する規格、**SQL-92**を由来とします。
+世間的にも広く流布している概念ですが、これをそのまま鵜呑みにしてしまうのはいくつかの点で注意が必要です。
+まずは、簡単に定義を確認しておきます。
 
 ## 定義
 
-3つのSerializabilityに反するPhenomenon/Anomalyが定義されています。
+**SQL-92 Isolation Level**では3つのSerializabilityに反する**Phenomenon/Anomaly**を定義しています。
 
-- P1: Direty Read
-- P2: Non-Repeatable Read
-- P3: Phantom Read
+| Phenomenon | Name             | Description                                                                    |
+| ---------- | ---------------- | ------------------------------------------------------------------------------ |
+| **P1**     | **Dirty Read**   | 未コミットの他のトランザクションの値を読んでしまう                             |
+| **P2**     | **Fuzzy Read**   | 複数回同じ値を読むと、コミット済みの他のトランザクションにより、結果が変わる   |
+| **P3**     | **Phantom Read** | 複数回範囲検索をすると、コミット済みの他のトランザクションにより、結果が変わる |
 
-これを防ぐものとして、それぞれ
+そして、これらに対応する形でどこまで防ぐかで、**Isolation Level**が定義されています。
 
-- Read Uncommited: どれも防がない
-- Read Commited: Dirty Readを防ぐ
-- Repeatable Read: Non-Repeatable Readを防ぐ
-- Serializable: Phantom Readを防ぐ
+| Isolation Level      | 防ぐPhenomenon/Anomaly |
+| -------------------- | ---------------------- |
+| **Read Uncommitted** | なし                   |
+| **Read Committed**   | P1                     |
+| **Repeatable Read**  | P1・P2                 |
+| **Serializable**     | P1・P2・P3             |
 
-これらは包含関係になっており、下に行くほど上で防いでいるPhenomenonも防ぎます。
+これらは包含関係になっており、上位のIsolation Levelになれば下位のLevelで防ぐAnomalyも防ぎます。
 
-<ベン図をMermaid>
+![](/images/dbms-isolation/tx015.png)
 
-## Conflict Serializableとの関係性
+## Conflict Serializableとの関係
 
 では、Conflict Serializable（かつCascading Abortを避ける）スケジュールは、この定義におけるどこに位置するでしょうか。
 
-- DirtyReadはCascadingAbortによって防がれます。
-- Non-Repeatable Readに関しても、Conflict Serializabilityによって防がれます。
-- ところが、Phantom Readは競合するものがないので、この枠組みだと防げません。
+- Dirty Readは、CascadingAbortによって防がれます。
+- Fuzzy Readに関しても、Conflict Serializabilityによって防がれます。
+- ところが、Phantom Readは、範囲に対する競合制御なければ防げません。
 
-そうなってくると、ANSIの定義に従えば、Repeatable Read止まりということになります。
-(範囲に対してロックを取るようなことをすればANSI Serializableになります)
+ということは、**ANSIの定義上は、Repeatable Read相当**ということになります。
+この点は事をややこしくする一つです。
 
-この点も事をややこしくする一つです。
+## Snapshot Isolationとの関係
 
-## Snapshot Isolationとの関係性
+先出しになりますが、現代のRDBMSは多くが、**MVCC**（Multi-Version Concurrency Control）と言う方法を用い、**Snapshot Isolation**という別の基準を実現しています。
+Snapshot Isolation自体が、『A Critique of ANSI SQL Isolation Levels』という、ANSIのIsolation Levelのアンチテーゼの論文を由来としています。
+そういった歴史的背景からも、先ほどのベン図の中には綺麗に収まらない概念です。
 
-更に極め付けは、現代のRDBMSが多く実装しているMVCCはSnapshot Isolationという別の基準を実装するための方法で、SnapshotIsolationはこのANSIの企画を批判する論文の中で提示されたものです。
+- Snapshot IsolationはPhantom Readを防ぐ
+  - ANSIの定義上はSerializableとも言える
+- しかし、**Write Skew**という別のAnomalyを引き起こす
+  - Write Skewは病院の当直の例が有名です
+- 一方で、Write Skewは前述のS2PLを取っている場合は発生しない
 
-そのため、さきほどのベン図の中には含まれなくなっています。
-具体的に言うと、Snapshot IsolationはPhantom Readを防ぎますが、WriteSkewというANSIでは提示されていない別のAnomalyを引き起こします。
-そして、WriteSkewはS2PLを取っているConflict Serializabilityでは起きません
+![](/images/dbms-isolation/tx016.png)
 
-そのため、ベン図はおかしなことになります。
-
-<ベン図をMermaid>
-
-この点はかなりややこしい上に、私たちが普段接するMySQLやPostgreSQLといったRDBMSはMVCCを使っています。
-更に、なぜかベン図が相容れないのにも関わらず、IsolationLevelはANSIの定義を使っています。
-各種DBMSの定義が一致していない、という話は結構有名ですが、そういう裏があります。
-更に、本稿で触れた理論以外にも俺が考えた最強のDBMSを作るために独自の拡張がされているとも考えられここが難しいです。
-それぞれをそのまま理解するのも難しいし、理論から攻めても乖離があると言う感じです。
+この点は更に事をややこしくしています。
+私たちが普段接するRDBMSである、MySQLやPostgreSQLやOracleなどはMVCCを実装していますが、ANSIの定義とは相容れない概念にも関わらず、Isolation LevelとしてSQL-92の用語を使っています。
+よく耳にする「MySQLはRepeatable ReadでもPhantom Readを防ぐ」といった矛盾もうこういった背景があります。
 
 # Snapshot Isolation
 
-では、Snapshot Isolationとは何でしょうか
-
+では、少々前後してしまいましたが、**Snapshot Isolation**とは何でしょうか。
 定義としては以下のようになっています。
 
-<定義を書く。読み込みのスナップショット。書き込みの競合があったら先がちでAbort>
+1. トランザクション開始時に、それまでにコミットされた最後の値をスナップショットと考え、以降の読取りは常にその値を読む
+2. 以降の他トランザクションがコミットした値に関して、書き込みが競合した場合はAbortする
 
-読み込みは全てその当時の情報を使うので書き込みと競合しないわけです。
-そのため、実装時にもロックを取らずに済み、2PLで起こるロック待ちになったりDeadlockが起きやすい問題が緩和しています。
-(Writed-Writeは競合するためそうではないです)
+読み込みは全て開始当時の情報を使うので以後の書き込みと競合せず、実装時にも**共有ロックを取る必要が生じません**。
+そのため、2PLで弱点だったロック待ちやDeadlockが発生しやすいという問題が緩和されています。
+（Writed-Writeは競合するため、引き続きロックが必要です。）
 
-# MVCC
+# MVCC （Multi-Version Concurrency Control）
 
-さて、最後にSnapshotIsolationをどう実装するかです。
-一番知られている実装方法はMVCCです。
-Multi Version Concurrency Controlで、Snapshotを実現するために、同じ要素を複数バージョン保存するような実装を取ります。
+最後にSnapshot Isolationをどう実装するかを駆け足で見ていきます。
+有名な方法は**MVCC**（Multi-Version Concurrency Control）です。
+これは、スナップショットを実現するために、同じデータ項目に関して複数のバージョン保存する実装を取ります。
 
-具体的に見ていきましょう。
-一般的なRDBMSにおいて、ある要素とはテーブルの行であると思います。
-行はTupleと言われますが、それぞれその値がバイナリ化されて保存されています。
-（どのように保存されるか、ページなどの話は今回は省略します。）
+## 行（Tuple）
 
-MVCCではない場合は、
-同一のTupleをReadなりWriteなりする際にロックを取ります。先ほどの話です。
-MVCCの場合は、Tupleの先頭に、どのトランザクションで挿入されたかのIDとどのトランザクションで消されたかのIDを持ちます。
-PostgreSQLではtx_min, tx_maxというフィールドがMVCCのために存在します。
+一般的なRDBMSでは「テーブルの行（Tuple）」が最小の更新単位です。
+MVCCでは、行を保存するデータ内に**2 つのトランザクション識別子** を追加します。
 
-実際にInsert, Update, Deleteする際の処理を見てみます。
+|          | 意味                                                           |
+| -------- | -------------------------------------------------------------- |
+| `tx_min` | **行を挿入した**トランザクション識別子                         |
+| `tx_max` | **行を論理削除した**トランザクション識別子（**初期値はNULL**） |
 
-Insertの場合は、tx_minに自身のtx_idをいれ、tx_maxはからです
-Updateの場合は、元々のtx_maxに自身のtx_idをいれ削除し、新しいinsertをします
-Deleteの場合は、Updateの削除だけ
+## DML
 
-そして、Scanする際はどうしましょうか
-DBMSはどのトランザクションがCommitされAbortされたかを持っているのと、TransactionのIDは単調増加するので順序関係がわかります。
-そのため、Snapshotを取るを擬似的に行うために、Scanした際に自身より若くてAbortされてないものだけを読み取るようにします（読み取っていきながら無視する）
-さらに自身より若くてコミットされているtx_maxがあればそれは読み取りません。
+| 操作   | 変更点                                      | ロック       |
+| ------ | ------------------------------------------- | ------------ |
+| INSERT | `tx_min ← 自 TX`, `tx_max ← NULL`           | なし         |
+| UPDATE | 旧行: `tx_max ← 自 TX`、新行: INSERT と同じ | Write ロック |
+| DELETE | 旧行: UPDATEと同じ                          | Write ロック |
 
-さらにWriteの制約を守るために、Write時にはロックを取ります（COmmit間で保持します）
-そして、ロックが外れたら、tx_maxに入っている値を見ます。
-それがAbortされているTransactionの値であればそのまま進めますが、Commitされていればそれはすでに削除されています（あるいは更新されている）
-そこで自身もAbortを決め込みます。
+- UPDATEは「古いバージョンを論理削除 → 新バージョンを挿入」の 2 ステップ。
+- Writeロックはコミットまで保持し、他 TX からの同時書込みを防ぎます。
+
+## 可視性ルール
+
+各トランザクションは **開始時点のスナップショット**（コミット状態＋未確定 TX 一覧）を持ちます。  
+行をスキャンするときは以下を両方満たすバージョンのみ可視と判定します。
+
+1. `tx_min` が **自スナップショット時点以前** かつ **コミット済み**
+2. `tx_max` が **NULL** または “スナップショット時点で未コミット”
+
+## 書込み競合とAbort
+
+1. 書込み対象行にWriteロックを取得を試みる
+2. 以降の他トランザクションが書き込みを行なっていればロック待ちとなる
+3. 他のトランザクションが完了（Commit or Abort）すると、ロックが解除される
+4. tx_maxがトランザクション開始時に完了していないIDの場合
+   - Commit済みなら、自身をAbort
+   - Abort済みなら処理を進める
+
+## Serializable Snapshot Isolation
+
+- Snapshot IsolationはWrite Skewの問題がある
+- これを解決する、Serializable Snapshot Isolation、が現代では定義され、PostgreSQLはこれを実装している。
 
 # おわりに
 
-次は余裕があったらDurabilityを解説する
-WALやARIES
+さて、Snapshot IsolationやMVCC周りは筆者の知識も十分とは言えずだいぶ駆け足になってしまいましたが、とりあえずIsolationの基礎は一通り話せたつもりです。
+もちろんこれは重厚なトランザクション理論の入り口に立ったに過ぎませんが、以前よりも雰囲気でトランザクションを理解している度が少しだけ減った気がします。
+自作RDBMSといった酔狂な試みだけでなく、実務的にも普段触るMySQLやPostgreSQLのトランザクションの挙動を推測しやすくなるのではないでしょうか。
+
+さて、今回はIsolationのみに着目しましたが、まだDurability、途中で障害が起きた時にも不整合が起きないようにする仕組みについてはほとんど触れてきませんでした。
+元気があれば、いつになるかわかりませんが、後編の記事を書こうと思います。
