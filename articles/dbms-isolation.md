@@ -3,7 +3,7 @@ title: "自作DBMSに必要な体系的トランザクション知識（導入�
 emoji: "🐘"
 type: "tech"
 topics: ["database", "db", "rdbms", "transaction"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
@@ -37,7 +37,7 @@ DBMSはあくまで、一般的なトランザクションというまとまり�
 
 特に微妙な立ち位置にいるのは**Consistency**です。
 これは例えば、「口座残高がマイナスにならない」、「ユーザーIDは重複しない」といった、ビジネスロジックの整合性を保証する性質とされていますが、具体的にどういった整合性を要求するかはアプリケーション側の責務です。
-DBMSの提供する型システムや制約はConsistencyを間接的に支援するかもしれませんが、汎用的なトランザクション処理からしたらその具体は関心の範囲外です。
+DBMSの提供する型システムや制約はConsistencyを間接的に支援するかもしれませんが、汎用的なトランザクション処理からしたらその具体は関心の埒外です。
 かの有名な[『データ指向アプリケーションデザイン』](https://www.oreilly.co.jp/books/9784873118703/)でも
 
 > ACIDはほとんどマーケティング用語
@@ -462,7 +462,7 @@ UPDATEは「古いバージョンを削除 → 新バージョンを挿入」の
 1. 書込み対象行にWriteロック取得を試みる
 2. 開始時点で未完了のトランザクションが**先に書き込みを行なっていればロック待ち**となる
 3. 他のトランザクションが完了（Commit or Abort）すると、ロックが解除される
-4. `tx_max`が、Commitされていたら**自身をAbort**、Abortされていたら処理を進める
+4. `xmax`が、Commitされていたら**自身をAbort**、Abortされていたら処理を進める
 
 ### Serializable Snapshot Isolation
 
