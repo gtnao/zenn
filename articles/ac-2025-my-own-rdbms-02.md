@@ -7,8 +7,6 @@ published: true
 publication_name: "primenumber"
 ---
 
-# Page （一人自作RDBMS Advent Calendar 2025 2日目）
-
 この記事は「[一人自作RDBMS Advent Calendar 2025](https://qiita.com/advent-calendar/2025/my-own-rdbms)」2日目の記事です。
 
 本日の実装は[GitHub](https://github.com/gtnao/advent-calendar-2025-my-own-rdbms/tree/main/day02)にあります。昨日からの差分は以下のコマンドで確認できます。

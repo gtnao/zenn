@@ -7,8 +7,6 @@ published: true
 publication_name: "primenumber"
 ---
 
-# はじめに & TupleのSerDe （一人自作RDBMS Advent Calendar 2025 1日目）
-
 この記事は「[一人自作RDBMS Advent Calendar 2025](https://qiita.com/advent-calendar/2025/my-own-rdbms)」1日目の記事です。
 
 ## はじめに
