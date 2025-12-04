@@ -2,7 +2,7 @@
 title: "はじめに & TupleのSerDe （一人自作RDBMS Advent Calendar 2025 1日目）"
 emoji: "🐘"
 type: "tech"
-topics: ["database", "db", "rdbms", "transaction"]
+topics: ["database", "rust", "db", "rdbms", "transaction"]
 published: true
 publication_name: "primenumber"
 ---

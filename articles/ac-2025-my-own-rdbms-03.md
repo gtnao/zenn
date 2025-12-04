@@ -2,7 +2,7 @@
 title: "Buffer Pool Manager （一人自作RDBMS Advent Calendar 2025 3日目）"
 emoji: "🐘"
 type: "tech"
-topics: ["database", "db", "rdbms", "transaction"]
+topics: ["database", "rust", "db", "rdbms", "transaction"]
 published: true
 publication_name: "primenumber"
 ---
