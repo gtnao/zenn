@@ -1,5 +1,5 @@
 ---
-title: "BEGIN/COMMIT/ROLLBACKとUndo Log （一人自作RDBMS Advent Calendar 2025 9日目）"
+title: "トランザクション(UNDO) （一人自作RDBMS Advent Calendar 2025 9日目）"
 emoji: "🐘"
 type: "tech"
 topics: ["database", "rust", "db", "rdbms", "transaction"]
