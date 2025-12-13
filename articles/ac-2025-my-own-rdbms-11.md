@@ -44,6 +44,8 @@ git diff --no-index day10 day11
 
 ページ単位での書き込みでは、トランザクションの境界を正しく扱えません。
 
+![COMMIT時にflushしても解決しない理由](https://storage.googleapis.com/zenn-user-upload/ec3566bd276d-20251213.png)
+
 ## Write-Ahead Logging (WAL)
 
 この問題を解決するのが**Write-Ahead Logging (WAL)** です。
@@ -155,6 +157,22 @@ pub struct WalRecord {
 ```
 
 `Insert`と`Delete`には実際のタプルデータが含まれており、これを使ってRedo/Undoが可能です。
+
+```
+WALファイル構造:
+┌─────────────────────────────────────────────────────────────────┐
+│                        WAL File (append-only)                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Record 1    │  Record 2    │  Record 3    │  Record 4    │ ... │
+│  (LSN=1)     │  (LSN=2)     │  (LSN=3)     │  (LSN=4)     │     │
+└─────────────────────────────────────────────────────────────────┘
+
+各レコードの構造:
+┌────────┬────────┬──────────┬──────┬──────────┬─────────────────┐
+│  len   │  lsn   │  txn_id  │ type │ data_len │      data       │
+│ 4bytes │ 8bytes │  8bytes  │ 1byte│  4bytes  │    variable     │
+└────────┴────────┴──────────┴──────┴──────────┴─────────────────┘
+```
 
 ### WALの書き込み
 
