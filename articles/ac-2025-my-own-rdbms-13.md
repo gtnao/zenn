@@ -3,7 +3,7 @@ title: "Fuzzy Checkpoint （一人自作RDBMS Advent Calendar 2025 13日目）"
 emoji: "🐘"
 type: "tech"
 topics: ["database", "rust", "db", "rdbms", "transaction"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
