@@ -359,6 +359,8 @@ fn analyze(wal_records: &[WalRecord], checkpoint_lsn: Option<Lsn>) -> AnalysisRe
 
 ## 動作確認
 
+本来、Checkpointは一定間隔やWALサイズに応じて自動的に取得されますが、今回はテストのため`CHECKPOINT;`コマンドで手動実行できるようにしています。
+
 ### Test 1: Checkpoint後のリカバリ
 
 ```bash
