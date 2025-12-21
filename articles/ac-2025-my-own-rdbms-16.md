@@ -3,7 +3,7 @@ title: "システムカタログ/CRETE TABLE（一人自作RDBMS Advent Calendar
 emoji: "🐘"
 type: "tech"
 topics: ["database", "rust", "db", "rdbms"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
