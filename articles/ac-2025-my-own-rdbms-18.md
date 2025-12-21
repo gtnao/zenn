@@ -3,7 +3,7 @@ title: "Aggregate / GROUP BY（一人自作RDBMS Advent Calendar 2025 18日目�
 emoji: "🐘"
 type: "tech"
 topics: ["database", "rust", "db", "rdbms"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
