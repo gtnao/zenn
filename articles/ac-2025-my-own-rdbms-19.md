@@ -1,9 +1,9 @@
 ---
-title: "B-Tree（一人自作RDBMS Advent Calendar 2025 19日目）"
+title: "B+Tree（一人自作RDBMS Advent Calendar 2025 19日目）"
 emoji: "🐘"
 type: "tech"
 topics: ["database", "rust", "db", "rdbms"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
@@ -19,29 +19,19 @@ git diff --no-index day18 day19
 
 昨日Aggregate/GROUP BYを実装しました。今日からは**Index**の実装に着手します。Indexの実装は複雑なため、複数日に分けて進めます。
 
-今日はIndexのデータ構造である**B-Tree**の基盤部分を実装します。具体的には：
+今日はIndexのデータ構造である**B+Tree**の基盤部分を実装します。具体的には：
 
 - ページ構造の整理（HeapPage、LeafNode、InternalNode）
-- B-Treeの挿入（Insert）と範囲検索（Range Scan）
+- B+Treeの挿入（Insert）と範囲検索（Range Scan）
 - ユニットテストによる動作確認
 
 ## HeapPageへの名称変更
 
-これまで単に「Page」と呼んでいたテーブルデータを格納するページを、今回から`HeapPage`と呼びます。
+B+Tree用のページ（LeafNode、InternalNode）が追加されるため、これまで「Page」と呼んでいたテーブルデータ用のページを`HeapPage`に改名しました。Heap（ヒープ）とは、タプルを順序なく格納する方式のことで、[PostgreSQLでも同様の用語が使われています](https://www.interdb.jp/pg/pgsql01/03.html)。
 
-```
-これまで: Page（テーブルデータ用）
+## B+Treeの構造
 
-今回から: HeapPage（テーブルデータ用）
-          LeafNode（B-Treeリーフ用）
-          InternalNode（B-Tree内部ノード用）
-```
-
-Heap（ヒープ）とは、タプルを順序なく格納する方式のことです。B-Treeページと区別するためにこの名前を使います。
-
-## B-Treeの構造
-
-B-Treeは、ディスクベースのデータベースでよく使われる平衡木です。各ノードがページサイズに収まるように設計されており、ディスクI/Oを最小化できます。
+Indexの実装にはHash Indexなど様々な方式がありますが、今回は最も一般的なB+Treeを実装します。B+Treeの詳しい説明は他に譲りますが、実装はなかなか複雑です。
 
 ```
                     [30]              ← InternalNode（ルート）
@@ -53,7 +43,7 @@ B-Treeは、ディスクベースのデータベースでよく使われる平�
               リーフ間リンク
 ```
 
-- **InternalNode**: キーと子ページへのポインタを持ち、検索の道案内をする
+- **InternalNode**: キーと子ページへのポインタを持つ。どの子ノードに進むかを決める
 - **LeafNode**: 実際のデータ（キーとRID）を格納し、隣接リーフへのリンクを持つ
 
 ## ページレイアウト
@@ -63,18 +53,18 @@ B-Treeは、ディスクベースのデータベースでよく使われる平�
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Header (16 bytes)                                           │
-│   [0]      node_type = 0 (leaf)                            │
+│   [0]      node_type = 0 (leaf)                             │
 │   [1..3]   key_count                                        │
-│   [3..5]   free_space_offset                               │
-│   [5..9]   prev_leaf_page_id                               │
-│   [9..13]  next_leaf_page_id                               │
+│   [3..5]   free_space_offset                                │
+│   [5..9]   prev_leaf_page_id                                │
+│   [9..13]  next_leaf_page_id                                │
 ├─────────────────────────────────────────────────────────────┤
-│ Slot Array (grows →)     │ Free Space │ Entries (← grows)  │
-│ [off|len][off|len]...    │            │ [key|rid][key|rid] │
+│ Slot Array (grows →)     │ Free Space │ Entries (← grows)   │
+│ [off|len][off|len]...    │            │ [key|rid][key|rid]  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-HeapPageと同様に、スロット配列は前方へ、エントリは後方へ伸びます。両者が衝突するとページが満杯になります。
+HeapPageと同様に、スロット配列は前方へ、エントリは後方へ伸びます。
 
 リーフノードは隣接リーフへのポインタ（prev/next）を持つため、範囲検索時にリーフ間を効率的に移動できます。
 
@@ -83,85 +73,168 @@ HeapPageと同様に、スロット配列は前方へ、エントリは後方へ
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Header (16 bytes)                                           │
-│   [0]      node_type = 1 (internal)                        │
+│   [0]      node_type = 1 (internal)                         │
 │   [1..3]   key_count                                        │
-│   [3..5]   free_space_offset                               │
-│   [5..9]   rightmost_child                                 │
+│   [3..5]   free_space_offset                                │
+│   [5..9]   rightmost_child                                  │
 ├─────────────────────────────────────────────────────────────┤
-│ Slot Array (grows →)     │ Free Space │ Entries (← grows)  │
-│ [off|len][off|len]...    │            │ [key|child]...     │
+│ Slot Array (grows →)     │ Free Space │ Entries (← grows)   │
+│ [off|len][off|len]...    │            │ [key|child]...      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-内部ノードはキーと子ページIDを持ちます。ルーティングは以下のルールに従います。
+内部ノードはキーと子ページIDを持ちます。n個のキーはn+1個の子ページへの振り分けに使われます。各エントリは`(key, child)`のペアで「このキー**未満**ならこの子へ」を表しますが、最後のキー**以上**の場合の行き先が必要です。それがヘッダーに格納する`rightmost_child`です。
 
 ```
-キー配列: [K0, K1, K2, ...]
-子配列:   [C0, C1, C2, ..., rightmost]
+キー: [10, 20, 30]
+子:   [P0, P1, P2, rightmost=P3]
 
 検索キー k に対して:
-  k < K0        → C0 へ
-  K0 <= k < K1  → C1 へ
-  K1 <= k < K2  → C2 へ
-  ...
-  k >= 最後のキー → rightmost へ
+  k < 10   → P0 へ
+  10 <= k < 20 → P1 へ
+  20 <= k < 30 → P2 へ
+  k >= 30  → P3（rightmost）へ
 ```
 
-## Insert処理
+## 実装
 
-### 基本フロー
+### Insert
 
+```rust
+pub fn insert(&mut self, key: &IndexKey, rid: Rid) -> Result<()> {
+    if self.root_page_id.is_none() {
+        self.create_empty()?;
+    }
+
+    let root_id = self.root_page_id.unwrap();
+    let leaf_page_id = self.find_leaf(root_id, key)?;
+
+    // リーフに挿入、分割が発生したらsplit_keyと新ページIDが返る
+    let split_result = self.insert_into_leaf(leaf_page_id, key, rid)?;
+
+    // 分割が発生したら親に伝播
+    if let Some((split_key, new_page_id)) = split_result {
+        self.insert_into_parent(leaf_page_id, split_key, new_page_id)?;
+    }
+
+    Ok(())
+}
 ```
-1. ルートからリーフを探す（find_leaf）
-2. リーフにエントリを挿入
-3. リーフが満杯なら分割（split）
-4. 分割したら親に新しいキーを挿入
-5. 親も満杯なら再帰的に分割
-6. ルートが分割したら新しいルートを作成
+
+`insert_into_leaf`ではリーフが満杯なら分割します。
+
+```rust
+fn insert_into_leaf(&mut self, page_id: u32, key: &IndexKey, rid: Rid)
+    -> Result<Option<(IndexKey, u32)>>
+{
+    // ... ページ取得 ...
+
+    if LeafNode::need_split(&page_guard.data, key) {
+        let (new_page_id, new_page) = bpm.new_page()?;
+
+        // 分割してsplit_keyを取得
+        let split_key = LeafNode::split(&mut page_guard.data, &mut new_page_guard.data);
+
+        // リーフ間リンクを設定
+        LeafNode::set_next_leaf(&mut page_guard.data, Some(new_page_id));
+        LeafNode::set_prev_leaf(&mut new_page_guard.data, Some(page_id));
+
+        // split_keyより小さければ元のリーフ、そうでなければ新リーフに挿入
+        if *key < split_key {
+            LeafNode::insert(&mut page_guard.data, key, rid)?;
+        } else {
+            LeafNode::insert(&mut new_page_guard.data, key, rid)?;
+        }
+
+        return Ok(Some((split_key, new_page_id)));
+    }
+
+    LeafNode::insert(&mut page_guard.data, key, rid)?;
+    Ok(None)
+}
 ```
 
-### リーフの分割
+分割が発生するとsplit_keyを親に挿入します。親も満杯なら再帰的に分割し、ルートまで達したら新しいルートを作成します。
 
-リーフが満杯のとき、エントリを半分に分けて新しいリーフを作成します。
+#### リーフの分割
 
 ```
 分割前:
-[10|20|30|40|50] (満杯)
+   [...| 60 |...]
+         │
+         ↓
+  [10|20|30|40|50] (満杯、<60)
 
 分割後:
-[10|20]  →  [30|40|50]
-   ↑           ↑
- 元リーフ    新リーフ
-
-split_key = 30 を親に挿入
+   [...| 30 | 60 |...]
+         │    │
+         ↓    ↓
+      [10|20]  [30|40|50]
+      (<30)    (<60)
 ```
 
-分割後はリーフ間のリンク（prev/next）を正しく更新する必要があります。
+#### 内部ノードの分割
 
-### 内部ノードの分割
-
-内部ノードが満杯のとき、中央のキーを親に「押し上げ」ます。リーフと異なり、中央キー自体は元のノードに残りません。
+内部ノードの場合、中央キーは元のノードに残らず親に「押し上げ」られます。
 
 ```
 分割前:
-[10|20|30|40|50] (満杯)
+   [...| 60 |...]
+         │
+         ↓
+  [10|20|30|40|50] (満杯、<60)
 
 分割後:
-[10|20]  →親に30を挿入→  [40|50]
+   [...| 30 | 60 |...]
+         │    │
+         ↓    ↓
+      [10|20]  [40|50]
+      (<30)    (<60)
 ```
 
-## Range Scan処理
+### Range Scan
 
-範囲検索は以下のフローで行います。
+```rust
+pub fn range_scan(&self, start: Option<&IndexKey>, end: Option<&IndexKey>)
+    -> Result<Vec<(IndexKey, Rid)>>
+{
+    let root_id = match self.root_page_id {
+        Some(id) => id,
+        None => return Ok(vec![]),
+    };
 
+    // 開始リーフを特定
+    let start_leaf = match start {
+        Some(key) => self.find_leaf(root_id, key)?,
+        None => self.find_leftmost_leaf(root_id)?,
+    };
+
+    let mut results = Vec::new();
+    let mut current_leaf = Some(start_leaf);
+
+    // リーフチェーンを辿る
+    while let Some(leaf_id) = current_leaf {
+        // ... ページ取得 ...
+
+        for i in 0..count {
+            let key = LeafNode::get_key(&page_guard.data, i);
+            if let Some(e) = end {
+                if key >= *e {
+                    return Ok(results);  // 終了条件
+                }
+            }
+            let rid = LeafNode::get_rid(&page_guard.data, i);
+            results.push((key, rid));
+        }
+
+        current_leaf = LeafNode::get_next_leaf(&page_guard.data);
+    }
+
+    Ok(results)
+}
 ```
-1. 開始キーに対応するリーフを探す
-2. 重複キー対応: 前方のリーフに同じキーがあれば遡る
-3. リーフチェーンを辿りながらエントリを収集
-4. 終了キーに達したら終了
-```
 
-リーフ間リンクがあるため、内部ノードを経由せずにリーフを順に辿れます。
+リーフ間リンク（next_leaf）を辿るため、内部ノードを経由せずに効率的にスキャンできます。
 
 ## 重複キーの扱い
 
@@ -175,83 +248,28 @@ let cmp = match mid_key.cmp(key) {
 };
 ```
 
-これにより、重複キーがあっても挿入位置が一意に決まります。
+これをやらないとどうなるか。キーだけで比較すると、重複キーの挿入位置が定まりません。
 
-## 実装上の注意点
-
-### BufferPoolManagerのロック
-
-同じロックを再取得するとデッドロックします。
-
-```rust
-// NG: デッドロック
-let mut bpm = self.bpm.lock().unwrap();
-// ... 処理 ...
-let mut bpm = self.bpm.lock().unwrap();  // 同じロックを再取得
-
-// OK: スコープで解放してから再取得
-let result = {
-    let mut bpm = self.bpm.lock().unwrap();
-    // ... 処理 ...
-    result
-};  // bpm はここで解放
-let mut bpm = self.bpm.lock().unwrap();  // OK
+```
+既存: [100, 100, 100]
+新規: 100 を挿入 → どこに入れる？
 ```
 
-### unpin_pageの呼び忘れ
-
-`fetch_page`したら必ず`unpin_page`を呼びます。忘れるとバッファプールが枯渇します。
-
-```rust
-let page = bpm.fetch_page(id)?;
-// ... 使用 ...
-bpm.unpin_page(id, dirty)?;  // 必須
-```
-
-### 分割後のリンク設定
-
-`LeafNode::split`はprev/nextを仮の値で初期化します。呼び出し元で正しく設定する必要があります。
-
-```rust
-LeafNode::set_next_leaf(&mut src, Some(new_page_id));
-LeafNode::set_prev_leaf(&mut dst, Some(src_page_id));
-```
+二分探索の結果が不定になり、同じ操作をしても異なるツリー構造になる可能性があります。RIDを含めて比較することで、挿入位置が一意に決まります。
 
 ## テスト
 
-B-Treeは複雑なため、ユニットテストを書いて動作確認しています。また、Indexの実装は複数日にまたがるため、途中段階でのテストが重要です。
+これまでの記事では毎日実行結果を確認していましたが、今回はB+Treeの基盤部分のみでSQLからはまだ使えません。実装が複雑なこともあり、ユニットテストで動作確認しています。
 
-```rust
-#[test]
-fn test_btree_insert_many_causes_split() {
-    let (mut btree, _dir) = setup_btree();
-
-    // 100件挿入して分割を発生させる
-    for i in 0..100 {
-        let key = IndexKey::single(Value::Int(i));
-        let rid = Rid { page_id: i as u32, slot_id: 0 };
-        btree.insert(&key, rid).unwrap();
-    }
-
-    // 全件検索できることを確認
-    for i in 0..100 {
-        let key = IndexKey::single(Value::Int(i));
-        assert_eq!(btree.search(&key).unwrap(), Some(...));
-    }
-}
-```
-
-テストでは以下のケースを確認しています：
-
-- 空のツリーへの挿入・検索
-- 分割を伴う大量挿入
-- 逆順挿入（分割の偏りをテスト）
-- 重複キーの挿入と検索
-- 範囲検索の境界条件
-- NULLやVarcharなど異なる型のキー
+- **基本操作**: 空ツリーの作成、キーの挿入と検索、IndexKeyのシリアライズ/デシリアライズ
+- **分割**: 100件の順次挿入による分割、逆順挿入、500件挿入による多段分割
+- **範囲検索**: 境界条件（開始が全エントリより前、終了が全エントリより後）、空範囲（開始=終了）、全件スキャン（None, None）、マッチなし
+- **重複キー**: 同一キー10件、分割を伴う200件、1000件の大量重複、重複と一意の混在、RID順の確認
+- **エッジケース**: 空ツリーでの検索/範囲検索、単一エントリ操作
+- **異なる型**: NULLキー（NULL < 他の値の確認）、Varcharキーの辞書順、複合キー（Int, Varchar）
 
 ## 次回予告
 
-今日でB-Treeの基盤部分を実装しました。
+今日でB+Treeの基盤部分を実装しました。
 
-次回はこのB-Treeを使って、実際に**CREATE INDEX**や**Index Scan**を実装し、SQLクエリでIndexを活用できるようにします。
+次回はこのB+Treeを使って、実際に**CREATE INDEX**や**IndexScanExecutor**を実装し、SQLクエリでIndexを活用できるようにします。
