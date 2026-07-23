@@ -3,7 +3,7 @@ title: "斜め読みしやすいコードをAIに吐かせる"
 emoji: "📕"
 type: "tech"
 topics: ["claudecode", "claude", "ai", "llm"]
-published: false
+published: true
 publication_name: "primenumber"
 ---
 
